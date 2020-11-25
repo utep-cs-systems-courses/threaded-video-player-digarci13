@@ -1,7 +1,7 @@
 
 import cv2
 import threading
-from ThreadQueue import ThreadQueue # separated ThreadQueue class for modularization
+from ThreadedQueue import ThreadQueue # separated ThreadQueue class for modularization
 
 VIDEOFILE = "../clip.mp4" # video clip path
 DELIMITER = "\0"
