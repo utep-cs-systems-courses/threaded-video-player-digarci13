@@ -11,16 +11,16 @@ def extractFrames(fileName, outputBuffer, maxFramesToLoad=9999):
     # read first image
     success,image = vidcap.read()
 
-    print(f'Reading frame {count} {success}')
+    #print(f'Reading frame {count} {success}')
     while(success):
         # add the frame to the buffer
         outputBuffer.put(image)
 
         success,image = vidcap.read()
-        print(f'Reading frame {count} {success}')
+        #print(f'Reading frame {count} {success}')
         count += 1
     outputBuffer.put('~')
-    print('Frame extraction complete')
+    #print('Frame extraction complete')
 
 def convertToGrayscale(colored, grayscaled):
     # initialize frame count
@@ -28,7 +28,7 @@ def convertToGrayscale(colored, grayscaled):
     # load the frame
     frame = colored.get()
     while frame is not '~':
-        print(f'Converting frame {count}')
+        #print(f'Converting frame {count}')
 
         # convert the image to grayscale
         grayscaleFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -48,7 +48,7 @@ def displayFrames(inputBuffer):
     frame = inputBuffer.get()
     # go through each frame in the buffer until the buffer is empty
     while frame is not '~':
-        print(f'Displaying frame {count}')
+        #print(f'Displaying frame {count}')
         # Display the frame in a window called "Video"
         cv2.imshow('Video', frame)
 
@@ -59,7 +59,7 @@ def displayFrames(inputBuffer):
         count += 1
         # Get the next frame from inputBuffer
         frame = inputBuffer.get()
-    print('Finished displaying all frames')
+    #print('Finished displaying all frames')
     # Cleans up the windows
     cv2.destroyAllWindows()
 
