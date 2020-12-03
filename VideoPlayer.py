@@ -67,7 +67,7 @@ if __name__ == "__main__":
     grayFrames = ThreadQueue()
     # three functions needed: extract frames, convert frames to grayscale,
     # and display frames at original framerate (24fps)
-    extractThread = threading.Thread(target = extractFrames, args = (VIDEOFILE, colorFrames))
+    extractThread = threading.Thread(target = extractFrames, args = (VIDEO, colorFrames))
     convertThread = threading.Thread(target = convertGrayscale, args = (colorFrames, grayFrames))
     displayThread = threading.Thread(target = displayFrames, args = (grayFrames,)) # <- needed to suppress error
     # start threads
