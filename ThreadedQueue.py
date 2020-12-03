@@ -14,7 +14,7 @@ class ThreadQueue(): # queue implemented with python list
         self.lock.release()
         self.full.release()
 
-    def get(self): # dequeue
+    def obtain(self): # dequeue
         self.full.acquire()
         self.lock.acquire()
         item = self.queue.pop(0)
