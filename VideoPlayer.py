@@ -1,76 +1,96 @@
 
-import cv2
-import threading
+
 from ThreadedQueue import ThreadQueue # separated ThreadQueue class for modularization
+from threading import Thread, Lock, Semaphore
+import cv2
 
 
-VIDEO = "../clip.mp4"  # video
-DELIMITER = "\0"
-FRAMEDELAY = 42
+# Read frames from file and extract them.
+def extractFrames(color_queue):
+    # File
+    clipFileName = 'clip.mp4'
+    # Initialize frame count
+    count = 0
+    # Open the video clip
+    vidcap = cv2.VideoCapture(clipFileName)
 
-
-def extractFrames(filename, frameQueue):
-    print('Extracting frames from: ', filename)
-    i = 0
-    video = cv2.VideoCapture(filename)
-    success, image = video.read()  # Reading each frame 1 by 1
-
-    print('Extracted Frame # {i} {success}')
+    # Read one frame
+    success, image = vidcap.read()
+    print(f'Reading frame {count} {success}')
 
     while success:
-        frameQueue.put(image)
-        success, image = video.read()
-        i += 1
-        print(f'Frame # {i} {success}')
+        # Put read frame into gray_queue
+        color_queue.put(image)
 
-    print('Frame extraction completed')
-    frameQueue.put(DELIMITER)
+        # Read next frame of file
+        success, image = vidcap.read()
+        print(f'Reading frame {count}')
 
+        count += 1
 
-def convertGrayscale(colorFrames, grayFrames):
-    print("Converting to grayscale...")
-    i = 0
-    colorFrame = colorFrames.obtain()
-
-    while colorFrame is not DELIMITER:
-        print(f'Converting frame # {i}')
-
-        grayFrame = cv2.cvtColor(colorFrame, cv2.COLOR_BGR2GRAY)  # convert the image to grayscale
-        grayFrames.put(grayFrame)  # enqueue frame
-        i += 1
-        colorFrame = colorFrames.obtain()  # dequeue next frame
-
-    print('Process completed')
-    grayFrames.put(DELIMITER)
+    # Convert frames to grayscale and send to next producer-consumer.
 
 
-def displayFrames(frames):
-    print('Displaying frames...')
-    i = 0
+def convertFrames(color_queue, gray_queue):
+    # Initialize frame count
+    count = 0
 
-    frame = frames.obtain()
+    # Load the next frame
+    inputFrame = color_queue.obtain()
 
-    while frame is not DELIMITER:
-        print(f'Displaying frame # {i}')
-        cv2.imshow('Video Play', frame)
+    while inputFrame is not None:
+        print(f'Converting frame {count}')
 
-        if cv2.waitKey(FRAMEDELAY) and 0xFF == ord("q"):
+        # Convert the image to grayscale
+        grayscaleFrame = cv2.cvtColor(inputFrame, cv2.COLOR_BGR2GRAY)
+
+        # Put converted frame into gray_queue
+        gray_queue.put(grayscaleFrame)
+
+        count += 1
+
+        # Load the next frame
+        inputFrame = color_queue.obtain()
+
+    # Display extracted frames.
+
+
+def displayFrames(gray_queue):
+    # Frame delay
+    frameDelay = 42
+    # Initialize frame count
+    count = 0
+    # load the frame
+    frame = gray_queue.obtain()
+
+    while frame is not None:
+        print(f'Displaying frame {count}')
+        # Display the frame in a window called "Video"
+        cv2.imshow('Video', frame)
+
+        # Wait for 42 ms and check if the user wants to quit
+        if cv2.waitKey(frameDelay) and 0xFF == ord("q"):
             break
 
-        i += 1
-        frame = frames.obtain()
+        count += 1
 
-    print('Process completed')
-    cv2.destroyAllWindows()  # Cleaning opened windows
-if __name__ == "__main__":
-    colorFrames = ThreadQueue()
-    grayFrames = ThreadQueue()
-    # three functions needed: extract frames, convert frames to grayscale,
-    # and display frames at original framerate (24fps)
-    extractThread = threading.Thread(target = extractFrames, args = (VIDEO, colorFrames))
-    convertThread = threading.Thread(target = convertGrayscale, args = (colorFrames, grayFrames))
-    displayThread = threading.Thread(target = displayFrames, args = (grayFrames,)) # <- needed to suppress error
-    # start threads
-    extractThread.start()
-    convertThread.start()
-    displayThread.start()
+        # Load the next frame file
+        frame = gray_queue.obtain()
+
+    # make sure we cleanup the windows, otherwise we might end up with a mess
+    cv2.destroyAllWindows()
+
+
+# Producer-consumer thread setup
+# Color frame queue
+color_queue = ThreadQueue()
+# Gray frame queue
+gray_queue = ThreadQueue()
+# Threads
+extract_f = Thread(target=extractFrames, args=(color_queue,))
+convert_f = Thread(target=convertFrames, args=(color_queue, gray_queue))
+display_f = Thread(target=displayFrames, args=(gray_queue,))
+
+extract_f.start()
+convert_f.start()
+display_f.start()
